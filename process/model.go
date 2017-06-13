@@ -62,9 +62,10 @@ func (p *process) GetTimestamps(envelopes []*events.Envelope) {
 func (p process) PrintResult() {
 	fmt.Printf("\n###############################\n")
 	fmt.Printf("SUMMARY\n")
-	fmt.Printf("[ %s ]: [ %v ]\n", "Step", "Duration")
+	fmt.Printf("%-20s: %15v\n", "Step", "Duration")
+	fmt.Printf("%-20s: %15v\n", "---", "---")
 	for k, v := range p.steps {
-		fmt.Printf("[%s]: [ %v]\n", k, v.getDuration())
+		fmt.Printf("%-20s: %15v\n", k, v.getDuration())
 	}
 	fmt.Printf("###############################\n")
 }

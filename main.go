@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"code.cloudfoundry.org/cftrace/cflib"
 	. "code.cloudfoundry.org/cftrace/process"
@@ -18,7 +17,11 @@ func main() {
 	dopplerAddress := envMustHave("DOPPLER_ADDR")
 	authToken := envMustHave("CF_AUTH_TOKEN")
 	appName := "randomX"
-	var appDir = flag.String("app-dir", "/Users/taakako1/workspace/cf-acceptance-tests/assets/dora", "The directory of the app to push")
+	pwd, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var appDir = flag.String("app-dir", pwd, "The directory of the app to push")
 	flag.Parse()
 
 	cf := cflib.Adapter{CfCliPath: "cf"}
@@ -47,28 +50,24 @@ func main() {
 		}
 	}(stop)
 
-	fmt.Printf("=== Pushing app started %s\n", *appDir)
 	if cf.Push(appName, *appDir) != nil {
 		log.Fatal("cf push failed!")
 	}
-	fmt.Printf("=== Pushing app completed\n")
-	close(stop)
 
-	fmt.Printf("=== Getting guid %s\n", *appDir)
 	appGuid, err := cf.AppGuid(appName)
 	if err != nil {
 		log.Fatal("cf app x --guid failed ")
 	}
 
-	fmt.Printf("== Deleting app %s completed\n", *appDir)
 	if cf.Delete(appName) != nil {
 		log.Fatal("cf delete failed!")
 	}
 
-	p := NewPushProcess(strings.TrimSpace(string(appGuid)))
+	close(stop)
+	p := NewPushProcess(appGuid)
 	p.GetTimestamps(msgBuffer)
 	p.PrintResult()
-	//InvestigateMessages(msgBuffer, strings.TrimSpace(string(appGuid)))
+	//InvestigateMessages(msgBuffer, appGuid)
 
 }
 
