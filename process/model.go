@@ -31,7 +31,12 @@ type process struct {
 
 func NewPushProcess(guid string) process {
 	t := map[string]*step{
-		"Staging": &step{startMsg: "Staging...", endMsg: "Staging complete"},
+		"Total": &step{startMsg: "Created app with guid " + guid,
+			endMsg: "Container became healthy"},
+		"Staging": &step{startMsg: "Staging...",
+			endMsg: "Staging complete"},
+		"Upload Droplet": &step{startMsg: "Uploading droplet, build artifacts cache...",
+			endMsg: "Uploading complete"},
 	}
 
 	return process{
@@ -55,23 +60,24 @@ func (p *process) GetTimestamps(envelopes []*events.Envelope) {
 }
 
 func (p process) PrintResult() {
+	fmt.Printf("\n###############################\n")
 	fmt.Printf("SUMMARY\n")
-	fmt.Printf("App GUID = %s\n", p.appGuid)
 	fmt.Printf("[ %s ]: [ %v ]\n", "Step", "Duration")
 	for k, v := range p.steps {
 		fmt.Printf("[%s]: [ %v]\n", k, v.getDuration())
 	}
+	fmt.Printf("###############################\n")
 }
 
-// func processMessages(messages []*events.Envelope, appGuid string) {
-// 	reader := bufio.NewReader(os.Stdin)
-// 	fmt.Println("Reading messages")
-// 	for _, m := range messages {
-// 		if m.GetLogMessage().GetAppId() == appGuid {
-// 			fmt.Println(m.String())
-// 			reader.ReadString('\n')
-// 		} else {
-// 			fmt.Printf("[%s]==[%s]\n", m.GetLogMessage().GetAppId(), appGuid)
-// 		}
-// 	}
-// }
+func InvestigateMessages(envelopes []*events.Envelope, appGuid string) {
+	//	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Reading messages")
+	for _, e := range envelopes {
+		m := e.GetLogMessage()
+		if m.GetAppId() != appGuid {
+			continue
+		}
+		fmt.Println(string(m.GetMessage()))
+		//reader.ReadString('\n')
+	}
+}

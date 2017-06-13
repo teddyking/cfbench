@@ -4,10 +4,11 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"log"
 	"os"
-	"os/exec"
 	"strings"
 
+	"code.cloudfoundry.org/cftrace/cflib"
 	. "code.cloudfoundry.org/cftrace/process"
 	"github.com/cloudfoundry/noaa/consumer"
 	"github.com/cloudfoundry/sonde-go/events"
@@ -19,6 +20,8 @@ func main() {
 	appName := "randomX"
 	var appDir = flag.String("app-dir", "/Users/taakako1/workspace/cf-acceptance-tests/assets/dora", "The directory of the app to push")
 	flag.Parse()
+
+	cf := cflib.Adapter{CfCliPath: "cf"}
 
 	fmt.Println("=== Start recording all messages from Firehose in the background")
 	msgBuffer := make([]*events.Envelope, 0, 200)
@@ -44,37 +47,28 @@ func main() {
 		}
 	}(stop)
 
-	fmt.Printf("=== Pushing app %s\n", *appDir)
-	cmd := exec.Command("cf", "push", "-p", *appDir, appName)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Println("push failed!")
-		fmt.Println(string(out))
-		os.Exit(1)
+	fmt.Printf("=== Pushing app started %s\n", *appDir)
+	if cf.Push(appName, *appDir) != nil {
+		log.Fatal("cf push failed!")
 	}
-	fmt.Printf("=== Pushing app %s completed\n", *appDir)
+	fmt.Printf("=== Pushing app completed\n")
 	close(stop)
 
 	fmt.Printf("=== Getting guid %s\n", *appDir)
-	cmd = exec.Command("cf", "app", appName, "--guid")
-	appGuid, err := cmd.CombinedOutput()
+	appGuid, err := cf.AppGuid(appName)
 	if err != nil {
-		fmt.Println("push failed!", err)
-		os.Exit(1)
+		log.Fatal("cf app x --guid failed ")
 	}
 
 	fmt.Printf("== Deleting app %s completed\n", *appDir)
-	cmd = exec.Command("cf", "delete", appName, "-f")
-	_, err = cmd.CombinedOutput()
-	if err != nil {
-		fmt.Println("delte failed!")
-		fmt.Println(string(out))
-		os.Exit(1)
+	if cf.Delete(appName) != nil {
+		log.Fatal("cf delete failed!")
 	}
 
 	p := NewPushProcess(strings.TrimSpace(string(appGuid)))
 	p.GetTimestamps(msgBuffer)
 	p.PrintResult()
+	//InvestigateMessages(msgBuffer, strings.TrimSpace(string(appGuid)))
 
 }
 
