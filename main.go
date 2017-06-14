@@ -24,15 +24,14 @@ func main() {
 	var appDir = flag.String("app-dir", pwd, "The directory of the app to push")
 	flag.Parse()
 
-	cf := cflib.Adapter{CfCliPath: "cf"}
-
 	fmt.Println("=== Start recording all messages from Firehose in the background")
-	msgBuffer := make([]*events.Envelope, 0, 200)
+	msgBuffer := make([]*events.Envelope, 0)
 	cnsmr := consumer.New(dopplerAddress, &tls.Config{InsecureSkipVerify: true}, nil)
 	defer cnsmr.Close()
 	stop := make(chan interface{})
 	go func(stop <-chan interface{}) {
-		msgChan, errorChan := cnsmr.FilteredFirehose("whatisthat", string(authToken), consumer.LogMessages)
+		//msgChan, errorChan := cnsmr.FilteredFirehose("whatisthat", string(authToken), consumer.LogMessages)
+		msgChan, errorChan := cnsmr.Firehose("whatisthat", string(authToken))
 		go func() {
 			for err := range errorChan {
 				fmt.Fprintf(os.Stderr, "%v\n", err.Error())
@@ -49,6 +48,8 @@ func main() {
 			}
 		}
 	}(stop)
+
+	cf := cflib.Adapter{CfCliPath: "cf"}
 
 	if cf.Push(appName, *appDir) != nil {
 		log.Fatal("cf push failed!")
@@ -68,7 +69,6 @@ func main() {
 	p.GetTimestamps(msgBuffer)
 	p.PrintResult()
 	//InvestigateMessages(msgBuffer, appGuid)
-
 }
 
 func envMustHave(key string) string {

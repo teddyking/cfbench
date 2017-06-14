@@ -2,6 +2,7 @@ package process
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/cloudfoundry/sonde-go/events"
 )
@@ -20,8 +21,12 @@ func (s *step) matchMe(m *events.LogMessage) {
 	}
 }
 
-func (s step) getDuration() int64 {
-	return s.endTime - s.startTime
+func (s step) getDuration() time.Duration {
+	return time.Duration(s.endTime - s.startTime)
+}
+
+func (s step) getProzent(total time.Duration) float64 {
+	return (float64(s.endTime) - float64(s.startTime)) * 100 / float64(total)
 }
 
 type process struct {
@@ -60,25 +65,34 @@ func (p *process) GetTimestamps(envelopes []*events.Envelope) {
 }
 
 func (p process) PrintResult() {
-	fmt.Printf("\n###############################\n")
+	fmt.Printf("\n###################################################\n")
 	fmt.Printf("SUMMARY\n")
-	fmt.Printf("%-20s: %15v\n", "Step", "Duration")
+	total := p.steps["Total"].getDuration() //FIXME. this is not safe, Total key might not exist
+	fmt.Printf("%-20s: %15v \n", "Step", "Duration (%)")
 	fmt.Printf("%-20s: %15v\n", "---", "---")
 	for k, v := range p.steps {
-		fmt.Printf("%-20s: %15v\n", k, v.getDuration())
+		fmt.Printf("%-20s: %5.2f sec (%5.2f%%)\n", k, v.getDuration().Seconds(), v.getProzent(total))
 	}
-	fmt.Printf("###############################\n")
+	fmt.Printf("\n###################################################\n")
 }
 
 func InvestigateMessages(envelopes []*events.Envelope, appGuid string) {
-	//	reader := bufio.NewReader(os.Stdin)
+	//reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Reading messages")
+	fmt.Printf("%+15s %+15s %+15s %+15s %+15s %+15s\n", "Timestamp", "eventType", "origin", "job", "index", "ip")
 	for _, e := range envelopes {
-		m := e.GetLogMessage()
-		if m.GetAppId() != appGuid {
-			continue
+		fmt.Printf("%+15v %+15v %+15v %+15v %+15v %+15v\t",
+			e.GetTimestamp(), e.GetEventType(), e.GetOrigin(), e.GetJob(), e.GetIndex(), e.GetIp())
+		switch e.GetEventType() {
+		case events.Envelope_LogMessage:
+			fmt.Printf("%v\n", e.GetLogMessage())
+		case events.Envelope_ValueMetric:
+			fmt.Printf("%v\n", e.GetValueMetric())
+		case events.Envelope_CounterEvent:
+			fmt.Printf("%v\n", e.GetCounterEvent())
+		default:
+			fmt.Printf("\n")
 		}
-		fmt.Println(string(m.GetMessage()))
 		//reader.ReadString('\n')
 	}
 }

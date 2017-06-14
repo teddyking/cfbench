@@ -1,6 +1,8 @@
 package process
 
 import (
+	"time"
+
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
 	. "github.com/onsi/ginkgo"
@@ -52,7 +54,7 @@ var _ = Describe("process verfication", func() {
 				}
 			})
 			It("finds the correct duration of the step", func() {
-				Expect(p.steps[s].getDuration()).To(Equal(int64(400)))
+				Expect(p.steps[s].getDuration()).To(Equal(time.Duration(400)))
 			})
 		})
 
@@ -64,7 +66,7 @@ var _ = Describe("process verfication", func() {
 				}
 			})
 			It("does not find a duration of the step for that guid", func() {
-				Expect(p.steps[s].getDuration()).NotTo(Equal(int64(400)))
+				Expect(p.steps[s].getDuration()).NotTo(Equal(time.Duration(400)))
 			})
 		})
 	})
