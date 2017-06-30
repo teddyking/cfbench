@@ -61,7 +61,8 @@ func main() {
 	fmt.Printf("\nResults:\n")
 
 	for _, phase := range bench.ExtractBenchmark(appGuid, firehoseEvents) {
-		fmt.Printf("%s: %s\n", phase.Name, phase.Duration().String())
+		fmt.Printf("%s: %s (%s - %s)\n", phase.Name, phase.Duration().String(),
+			time.Unix(0, phase.StartTimestamp), time.Unix(0, phase.EndTimestamp))
 	}
 }
 

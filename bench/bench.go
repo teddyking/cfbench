@@ -23,6 +23,23 @@ func ExtractBenchmark(appGUID string, events []*events.Envelope) Phases {
 			startMsg: "Uploading droplet, build artifacts cache...",
 			endMsg:   "Uploading complete",
 		},
+		&Phase{
+			Name:       "Total run",
+			startMsg:   "Creating container",
+			endMsg:     "Container became healthy",
+			sourceType: "CELL",
+		},
+		&Phase{
+			Name:       "Creating run container",
+			startMsg:   "Creating container",
+			endMsg:     "Successfully created container",
+			sourceType: "CELL",
+		},
+		&Phase{
+			Name:     "Health check",
+			startMsg: "Starting health monitoring of container",
+			endMsg:   "Container became healthy",
+		},
 	}
 
 	phases.populateTimestamps(appGUID, events)
@@ -30,16 +47,17 @@ func ExtractBenchmark(appGUID string, events []*events.Envelope) Phases {
 }
 
 type Phase struct {
-	Name     string
-	startMsg string
-	endMsg   string
+	Name       string
+	startMsg   string
+	endMsg     string
+	sourceType string
 
-	startTimestamp int64
-	endTimestamp   int64
+	StartTimestamp int64
+	EndTimestamp   int64
 }
 
 func (p Phase) Duration() time.Duration {
-	return time.Duration(p.endTimestamp - p.startTimestamp)
+	return time.Duration(p.EndTimestamp - p.StartTimestamp)
 }
 
 type Phases []*Phase
@@ -53,11 +71,15 @@ func (p Phases) populateTimestamps(appGUID string, events []*events.Envelope) {
 				continue
 			}
 
+			if phase.sourceType != "" && phase.sourceType != *logMsg.SourceType {
+				continue
+			}
+
 			logLine := string(logMsg.Message)
 			if phase.startMsg == logLine {
-				phase.startTimestamp = *logMsg.Timestamp
+				phase.StartTimestamp = *logMsg.Timestamp
 			} else if phase.endMsg == logLine {
-				phase.endTimestamp = *logMsg.Timestamp
+				phase.EndTimestamp = *logMsg.Timestamp
 			}
 		}
 	}

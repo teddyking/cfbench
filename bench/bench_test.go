@@ -20,8 +20,8 @@ var _ = Describe("ExtractBenchmark", func() {
 
 	BeforeEach(func() {
 		msgs = []*events.Envelope{
-			createEnvelopeMsg("Staging...", "123456", 2000),
-			createEnvelopeMsg("Staging complete", "123456", 2400),
+			createEnvelopeMsg("Staging...", "123456", "", 2000),
+			createEnvelopeMsg("Staging complete", "123456", "", 2400),
 		}
 	})
 
@@ -34,8 +34,7 @@ var _ = Describe("ExtractBenchmark", func() {
 			appGUID = "123456"
 		})
 
-		It("finds the correct duration of the step", func() {
-			Expect(phases).To(HaveLen(3))
+		It("finds the correct duration of the phase", func() {
 			Expect(phases[1].Name).To(Equal("Staging"))
 			Expect(phases[1].Duration()).To(Equal(time.Duration(400)))
 		})
@@ -46,21 +45,50 @@ var _ = Describe("ExtractBenchmark", func() {
 			appGUID = "garbage"
 		})
 
-		It("does not find a duration of the step for that guid", func() {
-			Expect(phases).To(HaveLen(3))
+		It("doesn't populate the duration", func() {
 			Expect(phases[1].Name).To(Equal("Staging"))
-			Expect(phases[1].Duration()).NotTo(Equal(time.Duration(400)))
+			Expect(phases[1].Duration()).To(Equal(time.Duration(0)))
+		})
+	})
+
+	Context("when the source type matches", func() {
+		BeforeEach(func() {
+			appGUID = "123456"
+			msgs = []*events.Envelope{
+				createEnvelopeMsg("Creating container", "123456", "CELL", 2000),
+				createEnvelopeMsg("Successfully created container", "123456", "CELL", 2001),
+			}
+		})
+
+		It("finds the correct duration of the phase", func() {
+			Expect(phases[4].Name).To(Equal("Creating run container"))
+			Expect(phases[4].Duration()).To(Equal(time.Duration(1)))
+		})
+	})
+
+	Context("when the source type doesn't match", func() {
+		BeforeEach(func() {
+			appGUID = "123456"
+			msgs = []*events.Envelope{
+				createEnvelopeMsg("Creating container", "123456", "", 2000),
+				createEnvelopeMsg("Successfully created container", "123456", "", 2001),
+			}
+		})
+
+		It("doesn't populate the duration", func() {
+			Expect(phases[4].Name).To(Equal("Creating run container"))
+			Expect(phases[4].Duration()).To(Equal(time.Duration(0)))
 		})
 	})
 })
 
-func createEnvelopeMsg(message, guid string, timestamp int64) *events.Envelope {
+func createEnvelopeMsg(message, guid, sourceType string, timestamp int64) *events.Envelope {
 	return &events.Envelope{
 		LogMessage: &events.LogMessage{
 			Message:     []byte(message),
 			MessageType: events.LogMessage_OUT.Enum(),
 			AppId:       proto.String(guid),
-			SourceType:  proto.String("DEA"),
+			SourceType:  proto.String(sourceType),
 			Timestamp:   proto.Int64(timestamp),
 		},
 	}
