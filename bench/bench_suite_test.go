@@ -1,4 +1,4 @@
-package process_test
+package bench_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -9,5 +9,5 @@ import (
 
 func TestProcess(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Process Suite")
+	RunSpecs(t, "Bench Suite")
 }

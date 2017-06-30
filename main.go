@@ -4,81 +4,81 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"log"
 	"os"
+	"time"
 
 	"github.com/cloudfoundry/noaa/consumer"
 	"github.com/cloudfoundry/sonde-go/events"
-	"github.com/teddyking/cfbench/cflib"
-	"github.com/teddyking/cfbench/process"
+	"github.com/teddyking/cfbench/bench"
+	"github.com/teddyking/cfbench/cf"
 )
 
 func main() {
-	dopplerAddress := envMustHave("DOPPLER_ADDR")
 	authToken := envMustHave("CF_AUTH_TOKEN")
-	appName := "randomX"
+
 	pwd, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-	var appDir = flag.String("app-dir", pwd, "The directory of the app to push")
+	mustNot("get CWD", err)
+	appDir := flag.String("app-dir", pwd, "The directory of the app to push")
+	dopplerAddress := flag.String("doppler-address", "", "doppler address")
+
 	flag.Parse()
 
-	fmt.Println("=== Start recording all messages from Firehose in the background")
-	msgBuffer := make([]*events.Envelope, 0)
-	cnsmr := consumer.New(dopplerAddress, &tls.Config{InsecureSkipVerify: true}, nil)
-	defer cnsmr.Close()
-	stop := make(chan interface{})
-	go func(stop <-chan interface{}) {
-		//msgChan, errorChan := cnsmr.FilteredFirehose("whatisthat", string(authToken), consumer.LogMessages)
-		msgChan, errorChan := cnsmr.Firehose("whatisthat", string(authToken))
-		go func() {
-			for err := range errorChan {
-				fmt.Fprintf(os.Stderr, "%v\n", err.Error())
-			}
-		}()
+	if *dopplerAddress == "" {
+		fmt.Println("must set --doppler-address")
+		os.Exit(1)
+	}
 
+	fmt.Println("Buffering all messages from Firehose in the background.")
+	firehoseEvents := make([]*events.Envelope, 100)
+	cnsmr := consumer.New(*dopplerAddress, &tls.Config{InsecureSkipVerify: true}, nil)
+	defer cnsmr.Close()
+	stopFirehose := make(chan struct{})
+	go func(stop <-chan struct{}) {
+		msgChan, errChan := cnsmr.Firehose("cfbench", string(authToken))
 		for {
 			select {
 			case msg := <-msgChan:
-				msgBuffer = append(msgBuffer, msg)
+				firehoseEvents = append(firehoseEvents, msg)
+			case err := <-errChan:
+				mustNot("consuming firehose", err)
 			case <-stop:
-				fmt.Println("=== Stop recording messages from Firehose")
 				return
 			}
 		}
-	}(stop)
+	}(stopFirehose)
 
-	cf := cflib.Adapter{CfCliPath: "cf"}
-
-	if cf.Push(appName, *appDir) != nil {
-		log.Fatal("cf push failed!")
-	}
-
+	appName := "benchme"
+	must("pushing app", cf.Push(appName, *appDir))
 	appGuid, err := cf.AppGuid(appName)
-	if err != nil {
-		log.Fatal("cf app x --guid failed ")
-	}
+	mustNot("getting app GUID", err)
+	must("deleting app", cf.Delete(appName))
 
-	if cf.Delete(appName) != nil {
-		log.Fatal("cf delete failed!")
-	}
+	fmt.Println("Waiting a few seconds in case some relevant messages are late")
+	time.Sleep(time.Second * 5)
 
-	close(stop)
-	p := process.NewPushProcess(appGuid)
-	p.GetTimestamps(msgBuffer)
-	p.PrintResult()
-	//InvestigateMessages(msgBuffer, appGuid)
+	close(stopFirehose)
+
+	fmt.Printf("\nResults:\n")
+
+	for _, phase := range bench.ExtractBenchmark(appGuid, firehoseEvents) {
+		fmt.Printf("%s: %s\n", phase.Name, phase.Duration().String())
+	}
 }
 
 func envMustHave(key string) string {
 	value := os.Getenv(key)
-	str := `
-export CF_AUTH_TOKEN=$(cf oauth-token); export DOPPLER_ADDR=$(cf curl /v2/info| jq -r .doppler_logging_endpoint)
-	`
 	if value == "" {
-		fmt.Printf("please set envs \n%s\n", str)
+		fmt.Printf("please set %s\n", key)
 		os.Exit(1)
 	}
 	return value
 }
+
+func mustNot(action string, err error) {
+	if err != nil {
+		fmt.Printf("error %s: %s\n", action, err)
+		os.Exit(1)
+	}
+}
+
+var must = mustNot
