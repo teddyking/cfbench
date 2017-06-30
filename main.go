@@ -7,10 +7,10 @@ import (
 	"log"
 	"os"
 
-	"code.cloudfoundry.org/cftrace/cflib"
-	. "code.cloudfoundry.org/cftrace/process"
 	"github.com/cloudfoundry/noaa/consumer"
 	"github.com/cloudfoundry/sonde-go/events"
+	"github.com/teddyking/cfbench/cflib"
+	"github.com/teddyking/cfbench/process"
 )
 
 func main() {
@@ -65,7 +65,7 @@ func main() {
 	}
 
 	close(stop)
-	p := NewPushProcess(appGuid)
+	p := process.NewPushProcess(appGuid)
 	p.GetTimestamps(msgBuffer)
 	p.PrintResult()
 	//InvestigateMessages(msgBuffer, appGuid)
