@@ -3,7 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"flag"
-	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -20,15 +20,16 @@ func main() {
 	mustNot("get CWD", err)
 	appDir := flag.String("app-dir", pwd, "The directory of the app to push")
 	dopplerAddress := flag.String("doppler-address", "", "doppler address")
+	// --json
 
 	flag.Parse()
 
 	if *dopplerAddress == "" {
-		fmt.Println("must set --doppler-address")
+		log.Println("must set --doppler-address")
 		os.Exit(1)
 	}
 
-	fmt.Println("Buffering all messages from Firehose in the background.")
+	log.Println("Buffering all messages from Firehose in the background.")
 	firehoseEvents := make([]*events.Envelope, 100)
 	cnsmr := consumer.New(*dopplerAddress, &tls.Config{InsecureSkipVerify: true}, nil)
 	defer cnsmr.Close()
@@ -53,15 +54,15 @@ func main() {
 	mustNot("getting app GUID", err)
 	must("deleting app", cf.Delete(appName))
 
-	fmt.Println("Waiting a few seconds in case some relevant messages are late")
+	log.Println("Waiting a few seconds in case some relevant messages are late")
 	time.Sleep(time.Second * 5)
 
 	close(stopFirehose)
 
-	fmt.Printf("\nResults:\n")
+	log.Printf("\nResults:\n")
 
 	for _, phase := range bench.ExtractBenchmark(appGuid, firehoseEvents) {
-		fmt.Printf("%s: %s (%s - %s)\n", phase.Name, phase.Duration().String(),
+		log.Printf("%s: %s (%s - %s)\n", phase.Name, phase.Duration().String(),
 			time.Unix(0, phase.StartTimestamp), time.Unix(0, phase.EndTimestamp))
 	}
 }
@@ -69,7 +70,7 @@ func main() {
 func envMustHave(key string) string {
 	value := os.Getenv(key)
 	if value == "" {
-		fmt.Printf("please set %s\n", key)
+		log.Printf("please set %s\n", key)
 		os.Exit(1)
 	}
 	return value
@@ -77,7 +78,7 @@ func envMustHave(key string) string {
 
 func mustNot(action string, err error) {
 	if err != nil {
-		fmt.Printf("error %s: %s\n", action, err)
+		log.Printf("error %s: %s\n", action, err)
 		os.Exit(1)
 	}
 }
