@@ -1,6 +1,10 @@
 package datadog
 
-import "github.com/teddyking/cfbench/bench"
+import (
+	"time"
+
+	"github.com/teddyking/cfbench/bench"
+)
 
 type Point [2]int64
 
@@ -17,12 +21,13 @@ type JsonResult struct {
 }
 
 func BuildJSONOutput(phases bench.Phases) JsonResult {
+	timeOfTest := time.Now().Unix()
 	result := JsonResult{}
 	for _, phase := range phases {
 		newSeries := MetricSeries{
 			Metric: phase.ShortName,
 			Points: []Point{
-				Point{phase.StartTimestamp, int64(phase.Duration())},
+				Point{timeOfTest, int64(phase.Duration())},
 			},
 			Type: "gauge",
 		}
