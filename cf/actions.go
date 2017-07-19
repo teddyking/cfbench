@@ -1,7 +1,7 @@
 package cf
 
 import (
-	"fmt"
+	"log"
 	"os/exec"
 	"strings"
 )
@@ -22,10 +22,10 @@ func AppGuid(name string) (string, error) {
 }
 
 func runCF(args ...string) (string, error) {
-	fmt.Printf("running: cf %s\n", strings.Join(args, " "))
+	log.Printf("running: cf %s\n", strings.Join(args, " "))
 	output, err := exec.Command("cf", args...).CombinedOutput()
 	if err != nil {
-		fmt.Printf("error running above command. Output: '%s', error: '%s'\n", string(output), err)
+		log.Printf("error running above command. Output: '%s', error: '%s'\n", string(output), err)
 		return "", err
 	}
 	return string(output), nil

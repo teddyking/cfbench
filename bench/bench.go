@@ -9,36 +9,42 @@ import (
 func ExtractBenchmark(appGUID string, events []*events.Envelope) Phases {
 	phases := Phases{
 		&Phase{
-			Name:     "Total",
-			startMsg: "Created app with guid " + appGUID,
-			endMsg:   "Container became healthy",
+			Name:      "Total",
+			startMsg:  "Created app with guid " + appGUID,
+			endMsg:    "Container became healthy",
+			ShortName: "total",
 		},
 		&Phase{
-			Name:     "Staging",
-			startMsg: "Staging...",
-			endMsg:   "Staging complete",
+			Name:      "Staging",
+			startMsg:  "Staging...",
+			endMsg:    "Staging complete",
+			ShortName: "staging",
 		},
 		&Phase{
-			Name:     "Upload droplet",
-			startMsg: "Uploading droplet, build artifacts cache...",
-			endMsg:   "Uploading complete",
+			Name:      "Upload droplet",
+			startMsg:  "Uploading droplet, build artifacts cache...",
+			endMsg:    "Uploading complete",
+			ShortName: "upload-droplet",
 		},
 		&Phase{
 			Name:       "Total run",
 			startMsg:   "Creating container",
 			endMsg:     "Container became healthy",
 			sourceType: "CELL",
+			ShortName:  "total-run",
 		},
 		&Phase{
 			Name:       "Creating run container",
 			startMsg:   "Creating container",
 			endMsg:     "Successfully created container",
 			sourceType: "CELL",
+			ShortName:  "creating-run-container",
 		},
 		&Phase{
-			Name:     "Health check",
-			startMsg: "Starting health monitoring of container",
-			endMsg:   "Container became healthy",
+			Name:      "Health check",
+			startMsg:  "Starting health monitoring of container",
+			endMsg:    "Container became healthy",
+			ShortName: "health-check",
 		},
 	}
 
@@ -51,6 +57,7 @@ type Phase struct {
 	startMsg   string
 	endMsg     string
 	sourceType string
+	ShortName  string
 
 	StartTimestamp int64
 	EndTimestamp   int64

@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"flag"
 	"log"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/teddyking/cfbench/bench"
 	"github.com/teddyking/cfbench/cf"
+	"github.com/teddyking/cfbench/datadog"
 )
 
 func main() {
@@ -20,7 +22,8 @@ func main() {
 	mustNot("get CWD", err)
 	appDir := flag.String("app-dir", pwd, "The directory of the app to push")
 	dopplerAddress := flag.String("doppler-address", "", "doppler address")
-	// --json
+	var jsonOutput bool
+	flag.BoolVar(&jsonOutput, "json", false, "Generate datadog-compatible JSON output on stdout")
 
 	flag.Parse()
 
@@ -59,14 +62,21 @@ func main() {
 
 	close(stopFirehose)
 
-	log.Printf("\nResults:\n")
-
-	for _, phase := range bench.ExtractBenchmark(appGuid, firehoseEvents) {
+	log.Printf("Results:\n")
+	phases := bench.ExtractBenchmark(appGuid, firehoseEvents)
+	for _, phase := range phases {
 		log.Printf("%s: %s (%s - %s)\n", phase.Name, phase.Duration().String(),
 			time.Unix(0, phase.StartTimestamp), time.Unix(0, phase.EndTimestamp))
 	}
-}
 
+	if jsonOutput {
+		jsonResult := datadog.BuildJSONOutput(phases)
+		err = json.NewEncoder(os.Stdout).Encode(jsonResult)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
 func envMustHave(key string) string {
 	value := os.Getenv(key)
 	if value == "" {
