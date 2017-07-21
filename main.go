@@ -52,7 +52,7 @@ func main() {
 		}
 	}(stopFirehose, msgChan, errChan)
 
-	log.Println("Waiting a few seconds to verify messages are recording")
+	log.Println("Waiting a few seconds to verify messages are being recorded")
 	time.Sleep(time.Second * 5)
 
 	appName := fmt.Sprintf("benchme-%v", time.Now().Unix())
