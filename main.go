@@ -73,7 +73,8 @@ func main() {
 			log.Printf("%s: %s (%s - %s)\n", phase.Name, phase.Duration().String(),
 				time.Unix(0, phase.StartTimestamp), time.Unix(0, phase.EndTimestamp))
 		} else {
-			log.Printf("%s: invalid measurement\n", phase.Name)
+			log.Printf("%s: %s (%s - %s)\n", phase.Name, "invalide measurement",
+				time.Unix(0, phase.StartTimestamp), time.Unix(0, phase.EndTimestamp))
 		}
 
 	}
