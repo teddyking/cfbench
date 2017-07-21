@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -51,7 +52,7 @@ func main() {
 		}
 	}(stopFirehose)
 
-	appName := "benchme"
+	appName := fmt.Sprintf("benchme-%v", time.Now().Unix())
 	must("pushing app", cf.Push(appName, *appDir))
 	appGuid, err := cf.AppGuid(appName)
 	mustNot("getting app GUID", err)
