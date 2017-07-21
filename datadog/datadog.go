@@ -25,6 +25,9 @@ func BuildJSONOutput(phases bench.Phases) JsonResult {
 	timeOfTest := time.Now().Unix()
 	result := JsonResult{}
 	for _, phase := range phases {
+		if !phase.IsValid() {
+			continue
+		}
 		newSeries := MetricSeries{
 			Metric: "cfbench." + phase.ShortName,
 			Points: []Point{

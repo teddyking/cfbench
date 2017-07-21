@@ -38,19 +38,22 @@ func main() {
 	cnsmr := consumer.New(*dopplerAddress, &tls.Config{InsecureSkipVerify: true}, nil)
 	defer cnsmr.Close()
 	stopFirehose := make(chan struct{})
-	go func(stop <-chan struct{}) {
-		msgChan, errChan := cnsmr.Firehose("cfbench", string(authToken))
+	msgChan, errChan := cnsmr.Firehose("cfbench", string(authToken))
+	go func(stop <-chan struct{}, msg <-chan *events.Envelope, err <-chan error) {
 		for {
 			select {
-			case msg := <-msgChan:
+			case msg := <-msg:
 				firehoseEvents = append(firehoseEvents, msg)
-			case err := <-errChan:
+			case err := <-err:
 				mustNot("consuming firehose", err)
 			case <-stop:
 				return
 			}
 		}
-	}(stopFirehose)
+	}(stopFirehose, msgChan, errChan)
+
+	log.Println("Waiting a few seconds to verify messages are recording")
+	time.Sleep(time.Second * 5)
 
 	appName := fmt.Sprintf("benchme-%v", time.Now().Unix())
 	must("pushing app", cf.Push(appName, *appDir))
@@ -66,8 +69,13 @@ func main() {
 	log.Printf("Results:\n")
 	phases := bench.ExtractBenchmark(appGuid, firehoseEvents)
 	for _, phase := range phases {
-		log.Printf("%s: %s (%s - %s)\n", phase.Name, phase.Duration().String(),
-			time.Unix(0, phase.StartTimestamp), time.Unix(0, phase.EndTimestamp))
+		if phase.IsValid() {
+			log.Printf("%s: %s (%s - %s)\n", phase.Name, phase.Duration().String(),
+				time.Unix(0, phase.StartTimestamp), time.Unix(0, phase.EndTimestamp))
+		} else {
+			log.Printf("%s: invalid measurement\n", phase.Name)
+		}
+
 	}
 
 	if jsonOutput {

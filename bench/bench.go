@@ -63,6 +63,10 @@ type Phase struct {
 	EndTimestamp   int64
 }
 
+func (p Phase) IsValid() bool {
+	return p.EndTimestamp != 0 && p.StartTimestamp != 0
+}
+
 func (p Phase) Duration() time.Duration {
 	return time.Duration(p.EndTimestamp - p.StartTimestamp)
 }
