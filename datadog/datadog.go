@@ -1,6 +1,7 @@
 package datadog
 
 import (
+	"os"
 	"time"
 
 	"github.com/teddyking/cfbench/bench"
@@ -30,6 +31,7 @@ func BuildJSONOutput(phases bench.Phases) JsonResult {
 				Point{timeOfTest, int64(phase.Duration())},
 			},
 			Type: "gauge",
+			Tags: []string{os.Getenv("CF_TAG")},
 		}
 		result.Series = append(result.Series, newSeries)
 	}
