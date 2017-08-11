@@ -12,7 +12,12 @@ func Push(name, directory string) error {
 }
 
 func Delete(appName string) error {
-	_, err := runCF("delete", "-f", appName)
+	_, err := runCF("delete", "-r", "-f", appName)
+	return err
+}
+
+func PurgeRoutes() error {
+	_, err := runCF("delete-orphaned-routes", "-f")
 	return err
 }
 

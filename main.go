@@ -60,6 +60,7 @@ func main() {
 	appGuid, err := cf.AppGuid(appName)
 	mustNot("getting app GUID", err)
 	must("deleting app", cf.Delete(appName))
+	must("purge routes", cf.PurgeRoutes())
 
 	log.Println("Waiting a few seconds in case some relevant messages are late")
 	time.Sleep(time.Second * 5)
@@ -87,6 +88,7 @@ func main() {
 		}
 	}
 }
+
 func envMustHave(key string) string {
 	value := os.Getenv(key)
 	if value == "" {
