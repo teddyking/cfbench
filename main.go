@@ -21,6 +21,7 @@ func main() {
 
 	pwd, err := os.Getwd()
 	mustNot("get CWD", err)
+	stack := flag.String("stack", "cflinuxfs2", "The stack to push the app to")
 	appDir := flag.String("app-dir", pwd, "The directory of the app to push")
 	dopplerAddress := flag.String("doppler-address", "", "doppler address")
 	var jsonOutput bool
@@ -56,7 +57,7 @@ func main() {
 	time.Sleep(time.Second * 5)
 
 	appName := fmt.Sprintf("benchme-%v", time.Now().Unix())
-	must("pushing app", cf.Push(appName, *appDir))
+	must("pushing app", cf.Push(appName, *appDir, *stack))
 	appGuid, err := cf.AppGuid(appName)
 	mustNot("getting app GUID", err)
 	must("deleting app", cf.Delete(appName))

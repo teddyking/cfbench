@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-func Push(name, directory string) error {
-	_, err := runCF("push", name, "-p", directory)
+func Push(name, directory, stack string) error {
+	_, err := runCF("push", name, "-p", directory, "-s", stack)
 	return err
 }
 
