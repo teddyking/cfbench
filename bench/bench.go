@@ -15,10 +15,11 @@ func ExtractBenchmark(appGUID string, events []*events.Envelope) Phases {
 			ShortName: "total",
 		},
 		&Phase{
-			Name:      "Staging",
-			startMsg:  "Staging...",
-			endMsg:    "Staging complete",
-			ShortName: "staging",
+			Name:       "Staging",
+			startMsg:   "Creating container",
+			endMsg:     "Successfully destroyed container",
+			sourceType: "STG",
+			ShortName:  "staging",
 		},
 		&Phase{
 			Name:      "Upload droplet",
