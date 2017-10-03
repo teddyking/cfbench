@@ -6,8 +6,16 @@ import (
 	"strings"
 )
 
-func Push(name, directory, stack string) error {
-	_, err := runCF("push", name, "-p", directory, "-s", stack)
+func Push(name, directory, stack, buildpack, startCommand string) error {
+	pushArgs := []string{"push", name, "-p", directory, "-s", stack}
+	if buildpack != "" {
+		pushArgs = append(pushArgs, "-b", buildpack)
+	}
+	if startCommand != "" {
+		pushArgs = append(pushArgs, "-c", startCommand)
+	}
+
+	_, err := runCF(pushArgs...)
 	return err
 }
 
