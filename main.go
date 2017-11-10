@@ -58,7 +58,7 @@ func main() {
 	log.Println("Waiting a few seconds to verify messages are being recorded")
 	time.Sleep(time.Second * 5)
 
-	appName := fmt.Sprintf("benchme-%v", time.Now().Unix())
+	appName := fmt.Sprintf("benchme-%v", time.Now().UnixNano())
 	must("pushing app", cf.Push(appName, *appDir, *stack, *buildpack, *startCommand))
 	appGuid, err := cf.AppGuid(appName)
 	mustNot("getting app GUID", err)
