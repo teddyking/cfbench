@@ -20,8 +20,8 @@ var _ = Describe("ExtractBenchmark", func() {
 
 	BeforeEach(func() {
 		msgs = []*events.Envelope{
-			createEnvelopeMsg("Staging...", "123456", "", 2000),
-			createEnvelopeMsg("Staging complete", "123456", "", 2400),
+			createEnvelopeMsg("Creating container", "123456", "STG", 2000),
+			createEnvelopeMsg("Successfully destroyed container", "123456", "STG", 2400),
 		}
 	})
 
