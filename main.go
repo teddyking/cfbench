@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -26,6 +27,9 @@ func main() {
 	startCommand := flag.String("startCommand", "", "The start command to push the app with")
 	appDir := flag.String("app-dir", pwd, "The directory of the app to push")
 	dopplerAddress := flag.String("doppler-address", "", "doppler address")
+	var tags tagList
+	flag.Var(&tags, "tag", "a tag, can be specified multiple times")
+
 	var jsonOutput bool
 	flag.BoolVar(&jsonOutput, "json", false, "Generate datadog-compatible JSON output on stdout")
 
@@ -84,7 +88,7 @@ func main() {
 	}
 
 	if jsonOutput {
-		jsonResult := datadog.BuildJSONOutput(phases)
+		jsonResult := datadog.BuildJSONOutput(phases, tags)
 		err = json.NewEncoder(os.Stdout).Encode(jsonResult)
 		if err != nil {
 			panic(err)
@@ -109,3 +113,18 @@ func mustNot(action string, err error) {
 }
 
 var must = mustNot
+
+type tagList []string
+
+func (p *tagList) String() string {
+	return fmt.Sprintf("%v", *p)
+}
+
+func (p *tagList) Set(tag string) error {
+	if tag == "" {
+		return errors.New("Cannot set blank tag")
+	}
+
+	*p = append(*p, tag)
+	return nil
+}

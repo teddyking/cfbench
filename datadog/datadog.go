@@ -1,7 +1,6 @@
 package datadog
 
 import (
-	"os"
 	"time"
 
 	"github.com/teddyking/cfbench/bench"
@@ -21,7 +20,7 @@ type JsonResult struct {
 	Series []MetricSeries `json:"series"`
 }
 
-func BuildJSONOutput(phases bench.Phases) JsonResult {
+func BuildJSONOutput(phases bench.Phases, tags []string) JsonResult {
 	timeOfTest := time.Now().Unix()
 	result := JsonResult{}
 	for _, phase := range phases {
@@ -34,7 +33,7 @@ func BuildJSONOutput(phases bench.Phases) JsonResult {
 				Point{timeOfTest, int64(phase.Duration())},
 			},
 			Type: "gauge",
-			Tags: []string{os.Getenv("CF_TAG")},
+			Tags: tags,
 		}
 		result.Series = append(result.Series, newSeries)
 	}
