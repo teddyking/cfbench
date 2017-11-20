@@ -3,6 +3,7 @@ package cf
 import (
 	"log"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -16,6 +17,14 @@ func Push(name, directory, stack, buildpack, startCommand string) error {
 	}
 
 	_, err := runCF(pushArgs...)
+	return err
+}
+
+func Scale(name string, instances int) error {
+	instanceStr := strconv.Itoa(instances)
+	scaleArgs := []string{"scale", name, "-i", instanceStr}
+
+	_, err := runCF(scaleArgs...)
 	return err
 }
 

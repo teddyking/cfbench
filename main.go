@@ -27,6 +27,8 @@ func main() {
 	startCommand := flag.String("startCommand", "", "The start command to push the app with")
 	appDir := flag.String("app-dir", pwd, "The directory of the app to push")
 	dopplerAddress := flag.String("doppler-address", "", "doppler address")
+	var scale int
+	flag.IntVar(&scale, "scale", 0, "scale app after pushing")
 	var tags tagList
 	flag.Var(&tags, "tag", "a tag, can be specified multiple times")
 
@@ -66,6 +68,12 @@ func main() {
 	must("pushing app", cf.Push(appName, *appDir, *stack, *buildpack, *startCommand))
 	appGuid, err := cf.AppGuid(appName)
 	mustNot("getting app GUID", err)
+
+	if scale > 0 {
+		cf.Scale(appName, scale)
+		time.Sleep(time.Second * 30)
+	}
+
 	must("deleting app", cf.Delete(appName))
 	must("purge routes", cf.PurgeRoutes())
 

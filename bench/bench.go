@@ -1,18 +1,21 @@
 package bench
 
 import (
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/cloudfoundry/sonde-go/events"
 )
 
-func ExtractBenchmark(appGUID string, events []*events.Envelope) Phases {
+func ExtractBenchmark(appGUID string, events []*events.Envelope, instances int) Phases {
 	phases := Phases{
 		&Phase{
 			Name:      "Total",
 			startMsg:  "Created app with guid " + appGUID,
 			endMsg:    "Container became healthy",
 			ShortName: "total",
+			waitFor:   1,
 		},
 		&Phase{
 			Name:       "Staging",
@@ -26,6 +29,14 @@ func ExtractBenchmark(appGUID string, events []*events.Envelope) Phases {
 			startMsg:  "Uploading droplet, build artifacts cache...",
 			endMsg:    "Uploading complete",
 			ShortName: "upload-droplet",
+		},
+		&Phase{
+			Name:       "Scaling",
+			startMsg:   fmt.Sprintf(`Updated app with guid %s ({"instances"=>%d})`, appGUID, instances),
+			endMsg:     "----",
+			sourceType: "CELL",
+			ShortName:  "scale",
+			waitFor:    instances - 1,
 		},
 		&Phase{
 			Name:       "Total run",
@@ -59,6 +70,7 @@ type Phase struct {
 	endMsg     string
 	sourceType string
 	ShortName  string
+	waitFor    int
 
 	StartTimestamp int64
 	EndTimestamp   int64
@@ -88,10 +100,13 @@ func (p Phases) populateTimestamps(appGUID string, events []*events.Envelope) {
 			}
 
 			logLine := string(logMsg.Message)
+			fmt.Fprintf(os.Stderr, "--> MESSAGE: %s\n", logLine)
+
 			if phase.startMsg == logLine {
 				phase.StartTimestamp = *logMsg.Timestamp
 			} else if phase.endMsg == logLine {
 				phase.EndTimestamp = *logMsg.Timestamp
+				break
 			}
 		}
 	}
