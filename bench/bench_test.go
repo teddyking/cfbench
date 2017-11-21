@@ -1,83 +1,123 @@
 package bench_test
 
 import (
-	"time"
-
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/teddyking/cfbench/bench"
+	. "github.com/teddyking/cfbench/bench"
 )
 
-var _ = Describe("ExtractBenchmark", func() {
+var _ = Describe("Phase", func() {
 	var (
 		appGUID string
+		phases  Phases
 		msgs    []*events.Envelope
-
-		phases bench.Phases
 	)
 
-	BeforeEach(func() {
-		msgs = []*events.Envelope{
-			createEnvelopeMsg("Creating container", "123456", "STG", 2000),
-			createEnvelopeMsg("Successfully destroyed container", "123456", "STG", 2400),
-		}
-	})
-
 	JustBeforeEach(func() {
-		phases = bench.ExtractBenchmark(appGUID, msgs)
+
 	})
 
-	Context("when the app guid matches a phase", func() {
+	Context("filters by app guid", func() {
 		BeforeEach(func() {
-			appGUID = "123456"
-		})
+			phases = Phases{
+				&Phase{
+					Name:             "Total",
+					StartMsg:         "start-message",
+					EndMsg:           "end-message",
+					ShortName:        "total",
+					SourceType:       "FOO",
+					EndMsgOccurences: 1,
+				},
+			}
 
-		It("finds the correct duration of the phase", func() {
-			Expect(phases[1].Name).To(Equal("Staging"))
-			Expect(phases[1].Duration()).To(Equal(time.Duration(400)))
-		})
-	})
-
-	Context("when the app guid doesn't match a phase", func() {
-		BeforeEach(func() {
-			appGUID = "garbage"
-		})
-
-		It("doesn't populate the duration", func() {
-			Expect(phases[1].Name).To(Equal("Staging"))
-			Expect(phases[1].Duration()).To(Equal(time.Duration(0)))
-		})
-	})
-
-	Context("when the source type matches", func() {
-		BeforeEach(func() {
-			appGUID = "123456"
 			msgs = []*events.Envelope{
-				createEnvelopeMsg("Creating container", "123456", "CELL", 2000),
-				createEnvelopeMsg("Successfully created container", "123456", "CELL", 2001),
+				createEnvelopeMsg("start-message", "123456", "FOO", 2000),
+				createEnvelopeMsg("end-message", "123456", "FOO", 2400),
 			}
 		})
 
-		It("finds the correct duration of the phase", func() {
-			Expect(phases[4].Name).To(Equal("Creating run container"))
-			Expect(phases[4].Duration()).To(Equal(time.Duration(1)))
+		It("finds the phases which match", func() {
+			phases.PopulateTimestamps("123456", msgs)
+			Expect(phases[0].StartTimestamp).To(Equal(int64(2000)))
+			Expect(phases[0].EndTimestamp).To(Equal(int64(2400)))
+		})
+
+		It("ignores the phases which don't match", func() {
+			phases.PopulateTimestamps("garbage", msgs)
+			Expect(phases[0].StartTimestamp).To(Equal(int64(0)))
+			Expect(phases[0].EndTimestamp).To(Equal(int64(0)))
+		})
+
+	})
+
+	Context("filters by source type", func() {
+		BeforeEach(func() {
+			phases = Phases{
+				&Phase{
+					Name:             "Total",
+					StartMsg:         "puppy",
+					EndMsg:           "kitten",
+					ShortName:        "total",
+					SourceType:       "FOO",
+					EndMsgOccurences: 1,
+				},
+				&Phase{
+					Name:             "Total",
+					StartMsg:         "puppy",
+					EndMsg:           "kitten",
+					ShortName:        "total",
+					SourceType:       "BAR",
+					EndMsgOccurences: 1,
+				},
+			}
+
+			msgs = []*events.Envelope{
+				createEnvelopeMsg("puppy", "123456", "FOO", 2000),
+				createEnvelopeMsg("kitten", "123456", "FOO", 2001),
+			}
+			appGUID = "123456"
+		})
+
+		It("finds the phases which match", func() {
+			phases.PopulateTimestamps(appGUID, msgs)
+			Expect(phases[0].StartTimestamp).To(Equal(int64(2000)))
+			Expect(phases[0].EndTimestamp).To(Equal(int64(2001)))
+		})
+		It("ignores the phases which don't match", func() {
+			phases.PopulateTimestamps(appGUID, msgs)
+			Expect(phases[1].StartTimestamp).To(Equal(int64(0)))
+			Expect(phases[1].EndTimestamp).To(Equal(int64(0)))
 		})
 	})
 
-	Context("when the source type doesn't match", func() {
+	Context("when endMsgOccurences is set", func() {
 		BeforeEach(func() {
-			appGUID = "123456"
-			msgs = []*events.Envelope{
-				createEnvelopeMsg("Creating container", "123456", "", 2000),
-				createEnvelopeMsg("Successfully created container", "123456", "", 2001),
+			phases = Phases{
+				&Phase{
+					Name:             "Total",
+					StartMsg:         "puppy",
+					EndMsg:           "kitten",
+					ShortName:        "total",
+					SourceType:       "FOO",
+					EndMsgOccurences: 10,
+				},
 			}
+
+			for i := 0; i <= 10; i++ {
+				msgs = append(msgs, []*events.Envelope{
+					createEnvelopeMsg("puppy", "123456", "FOO", 2000),
+					createEnvelopeMsg("kitten", "123456", "FOO", 2001+int64(i)),
+				}...)
+			}
+			appGUID = "123456"
 		})
 
-		It("doesn't populate the duration", func() {
-			Expect(phases[4].Name).To(Equal("Creating run container"))
-			Expect(phases[4].Duration()).To(Equal(time.Duration(0)))
+		It("sets the EndTimestamp to the occurrence of the last end message", func() {
+			phases.PopulateTimestamps(appGUID, msgs)
+			Expect(phases[0].StartTimestamp).To(Equal(int64(2000)))
+			Expect(phases[0].EndTimestamp).To(Equal(int64(2009)))
 		})
 	})
 })

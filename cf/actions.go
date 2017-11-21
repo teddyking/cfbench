@@ -1,9 +1,12 @@
 package cf
 
 import (
+	"fmt"
 	"log"
 	"os/exec"
+	"strconv"
 	"strings"
+	"time"
 )
 
 func Push(name, directory, stack, buildpack, startCommand string) error {
@@ -17,6 +20,27 @@ func Push(name, directory, stack, buildpack, startCommand string) error {
 
 	_, err := runCF(pushArgs...)
 	return err
+}
+
+func Scale(name string, instances int) error {
+	instanceStr := strconv.Itoa(instances)
+	scaleArgs := []string{"scale", name, "-i", instanceStr}
+
+	if _, err := runCF(scaleArgs...); err != nil {
+		return err
+	}
+
+	for i := 0; i <= 3*instances; i++ {
+		time.Sleep(time.Second)
+		out, err := runCF([]string{"app", name}...)
+		if err != nil {
+			return err
+		}
+		if strings.Count(out, "running") == instances {
+			return nil
+		}
+	}
+	return fmt.Errorf("App %s was not scaled within %v", name, instances*3)
 }
 
 func Delete(appName string) error {
