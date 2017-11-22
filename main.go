@@ -31,7 +31,7 @@ func main() {
 	startCommand := flag.String("startCommand", "", "The start command to push the app with")
 	appDir := flag.String("app-dir", pwd, "The directory of the app to push")
 	dopplerAddress := flag.String("doppler-address", "", "doppler address")
-	var instances int //TODO. instances
+	var instances int
 	flag.IntVar(&instances, "instances", 1, "scale app after pushing")
 	var tags tagList
 	flag.Var(&tags, "tag", "a tag, can be specified multiple times")

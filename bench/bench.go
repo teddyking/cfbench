@@ -11,10 +11,10 @@ import (
 func ExtractBenchmarkScale(appGUID string, instances int) Phases {
 	phases := Phases{
 		&Phase{
-			Name:             "Total",
+			Name:             "ScaleTotal",
 			StartMsg:         fmt.Sprintf(`Updated app with guid %s ({"instances"=>%d})`, appGUID, instances),
 			EndMsg:           "Container became healthy",
-			ShortName:        "total",
+			ShortName:        "total-scale",
 			EndMsgOccurences: instances - 1,
 		},
 	}
