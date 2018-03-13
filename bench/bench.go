@@ -3,6 +3,7 @@ package bench
 import (
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/cloudfoundry/sonde-go/events"
@@ -104,12 +105,12 @@ func (p Phases) PopulateTimestamps(appGUID string, events []*events.Envelope) {
 				continue
 			}
 
-			logLine := logMsg.GetMessage()
+			logLine := strings.ToLower(string(logMsg.GetMessage()))
 			//fmt.Printf("%s/%v: [%s]\n", logMsg.GetSourceType(), logMsg.GetSourceInstance(), string(logLine))
 
-			if phase.StartMsg == string(logLine) {
+			if strings.Contains(logLine, strings.ToLower(phase.StartMsg)) {
 				phase.StartTimestamp = *logMsg.Timestamp
-			} else if phase.EndMsg == string(logLine) {
+			} else if strings.Contains(logLine, strings.ToLower(phase.EndMsg)) {
 				remainingOccurences--
 				if remainingOccurences == 0 {
 					phase.EndTimestamp = *logMsg.Timestamp
