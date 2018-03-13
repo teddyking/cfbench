@@ -25,7 +25,7 @@ var _ = Describe("Phase", func() {
 				&Phase{
 					Name:             "Total",
 					StartMsg:         "start-message",
-					EndMsg:           "end-message",
+					EndMsg:           "End-Message",
 					ShortName:        "total",
 					SourceType:       "FOO",
 					EndMsgOccurences: 1,
@@ -33,12 +33,12 @@ var _ = Describe("Phase", func() {
 			}
 
 			msgs = []*events.Envelope{
-				createEnvelopeMsg("start-message", "123456", "FOO", 2000),
-				createEnvelopeMsg("end-message", "123456", "FOO", 2400),
+				createEnvelopeMsg("abc! start-message sdlfgjj", "123456", "FOO", 2000),
+				createEnvelopeMsg("end-messagesldkfjg lkj", "123456", "FOO", 2400),
 			}
 		})
 
-		It("finds the phases which match", func() {
+		It("finds the phases which match part of the message, ignoring case", func() {
 			phases.PopulateTimestamps("123456", msgs)
 			Expect(phases[0].StartTimestamp).To(Equal(int64(2000)))
 			Expect(phases[0].EndTimestamp).To(Equal(int64(2400)))
@@ -49,7 +49,6 @@ var _ = Describe("Phase", func() {
 			Expect(phases[0].StartTimestamp).To(Equal(int64(0)))
 			Expect(phases[0].EndTimestamp).To(Equal(int64(0)))
 		})
-
 	})
 
 	Context("filters by source type", func() {
